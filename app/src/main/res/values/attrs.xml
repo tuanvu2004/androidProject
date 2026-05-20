@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CustomInputField">
+        <attr name="labelText" format="string" />
+        <attr name="android:hint" />
+        <attr name="android:text" />
+        <attr name="android:inputType" />
+    </declare-styleable>
+
+    <declare-styleable name="CustomBtn">
+        <attr name="android:text" />
+    </declare-styleable>
+</resources>

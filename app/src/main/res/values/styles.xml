@@ -1,0 +1,18 @@
+<resources>
+    <style name="AppText">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="AppText.Medium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="AppText.Bold">
+        <item name="android:fontFamily">sans-serif-bold</item>
+    </style>
+
+    <style name="CircleImage">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>

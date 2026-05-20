@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- SHADOW CARD -->
+    <path
+        android:fillColor="#BBDEFB"
+        android:alpha="0.35"
+        android:pathData="M18,10H46A6,6 0 0,1 52,16V48A6,6 0 0,1 46,54H18A6,6 0 0,1 12,48V16A6,6 0 0,1 18,10Z"/>
+
+    <!-- CARD SAU -->
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M16,8H44A6,6 0 0,1 50,14V46A6,6 0 0,1 44,52H16A6,6 0 0,1 10,46V14A6,6 0 0,1 16,8Z"
+        android:rotation="-6"
+        android:pivotX="32"
+        android:pivotY="32"/>
+
+    <!-- CARD CHÍNH -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M20,12H48A6,6 0 0,1 54,18V50A6,6 0 0,1 48,56H20A6,6 0 0,1 14,50V18A6,6 0 0,1 20,12Z"/>
+
+    <!-- ICON NGÔI SAO -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M34,20L36.5,25H42L37.5,28.5L39,34L34,31L29,34L30.5,28.5L26,25H31.5Z"/>
+
+    <!-- DÒNG TEXT -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M22,38H46V41H22Z"/>
+
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M22,44H40V47H22Z"/>
+
+</vector>

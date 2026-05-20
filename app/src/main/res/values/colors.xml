@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Màu cơ bản -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="primary">#2196F3</color>
+
+    <!-- Bảng màu chế độ SÁNG (Light) -->
+    <color name="bg_light">#F5F5F5</color>
+    <color name="text_primary_light">#212121</color>
+    <color name="text_secondary_light">#757575</color>
+    <color name="red">#F44336</color>
+    <color name="red_light">#FFCDD2</color>
+    <!-- Bảng màu chế độ TỐI (Dark) -->
+    <color name="bg_dark">#121212</color>
+    <color name="bg_card_dark">#1E1E1E</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#B0B0B0</color>
+    <color name="primary_dark_mode">#90CAF9</color>
+</resources>

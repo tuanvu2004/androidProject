@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.button.MaterialButton
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/btnCustom"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+
+    android:textAllCaps="false"
+    android:gravity="center"
+    android:paddingHorizontal="24dp"
+    android:textSize="18sp"
+    android:textColor="?attr/colorOnPrimary"
+    app:backgroundTint="?attr/colorPrimary"
+
+    style="@style/AppText.Medium"/>

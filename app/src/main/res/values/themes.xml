@@ -1,0 +1,17 @@
+<resources>
+    <style name="Theme.MobileApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/bg_light</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/text_primary_light</item>
+        <item name="colorError">@color/red</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:textColorPrimary">@color/text_primary_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="colorSurfaceVariant">#E0E0E0</item>
+    </style>
+    <style name="Shape.App.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>
