@@ -36,6 +36,7 @@
         <activity android:name=".Activity.main.CreateTopic"/>
         <activity android:name=".Activity.main.QuizActivity"/>
         <activity android:name=".Activity.main.ReviewQuizActivity"/>
+        <activity android:name=".Activity.main.TopicManagementActivity"/>
 
     </application>
 

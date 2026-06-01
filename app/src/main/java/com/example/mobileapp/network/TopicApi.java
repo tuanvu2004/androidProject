@@ -11,12 +11,17 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.Headers;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
+import retrofit2.http.HTTP;
 
 public interface TopicApi {
 
+    @Headers("Cache-Control: no-cache")
     @POST("api/v1/topics/search")
     Call<ApiResponse<TopicPageResponse>> searchTopics(
             @Body TopicSearchRequest request
@@ -37,6 +42,7 @@ public interface TopicApi {
             @Body com.example.mobileapp.model.QuizSubmissionRequest request
     );
 
+    @Headers("Cache-Control: no-cache")
     @POST("api/v1/quiz/history/search")
     Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> searchQuizHistory(
             @Body com.example.mobileapp.model.TopicSearchRequest request
@@ -45,5 +51,33 @@ public interface TopicApi {
     @GET("api/v1/quiz/history/{resultId}")
     Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> getQuizHistoryDetail(
             @Path("resultId") Long resultId
+    );
+
+    @GET("api/v1/topics/{id}")
+    Call<ApiResponse<Topic>> getTopicById(
+            @Path("id") Long id
+    );
+
+    @DELETE("api/v1/topics/{id}")
+    Call<okhttp3.ResponseBody> deleteTopic(
+            @Path("id") Long id
+    );
+
+    @PUT("api/v1/topics/{id}")
+    Call<ApiResponse<Topic>> updateTopic(
+            @Path("id") Long id,
+            @Body Topic topic
+    );
+
+    @PUT("api/v1/topics/{id}/vocabularies")
+    Call<ApiResponse<Topic>> updateVocabularies(
+            @Path("id") Long id,
+            @Body List<Vocabulary> vocabularies
+    );
+
+    @HTTP(method = "DELETE", path = "api/v1/topics/{id}/vocabularies", hasBody = true)
+    Call<ApiResponse<Topic>> deleteVocabularies(
+            @Path("id") Long id,
+            @Body List<Long> vocabularyIds
     );
 }

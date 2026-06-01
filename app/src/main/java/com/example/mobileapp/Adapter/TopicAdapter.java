@@ -26,11 +26,20 @@ public class TopicAdapter extends RecyclerView.Adapter<TopicAdapter.TopicViewHol
 
     private final List<Topic> topics;
     private OnItemClickListener listener;
+    private OnItemLongClickListener longClickListener;
     private Map<Long, QuizResultResponse> historyMap = new HashMap<>();
     private boolean isLibraryMode = false;
 
     public interface OnItemClickListener {
         void onItemClick(Topic topic);
+    }
+
+    public interface OnItemLongClickListener {
+        void onItemLongClick(Topic topic);
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener longClickListener) {
+        this.longClickListener = longClickListener;
     }
 
     public void setLibraryMode(boolean libraryMode) {
@@ -49,6 +58,16 @@ public class TopicAdapter extends RecyclerView.Adapter<TopicAdapter.TopicViewHol
     public void setHistoryMap(Map<Long, QuizResultResponse> historyMap) {
         this.historyMap = historyMap;
         notifyDataSetChanged();
+    }
+
+    public void removeTopic(Long topicId) {
+        for (int i = 0; i < topics.size(); i++) {
+            if (topics.get(i).getId().equals(topicId)) {
+                topics.remove(i);
+                notifyItemRemoved(i);
+                break;
+            }
+        }
     }
 
     @NonNull
@@ -99,13 +118,16 @@ public class TopicAdapter extends RecyclerView.Adapter<TopicAdapter.TopicViewHol
             }
         } else {
             // CHẾ ĐỘ TRANG CHỦ: Tên topic + Số thẻ + Thời gian tạo (dd/MM/yyyy)
-            int cardCount = (topic.getVocabularies() != null) ? topic.getVocabularies().size() : topic.getTotalWords();
+            int cardCount = topic.getTotalWords();
+            if (cardCount == 0 && topic.getVocabularies() != null) {
+                cardCount = topic.getVocabularies().size();
+            }
             holder.txtCardCount.setText(String.format(Locale.getDefault(), "%d thẻ", cardCount));
             
             holder.txtCreatedAt.setText(formatShortDate(topic.getCreatedAt()));
         }
 
-        holder.itemView.setOnClickListener(v -> {
+        holder.cardStudySet.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(topic);
             } else {
@@ -116,6 +138,14 @@ public class TopicAdapter extends RecyclerView.Adapter<TopicAdapter.TopicViewHol
                 }
                 v.getContext().startActivity(intent);
             }
+        });
+
+        holder.cardStudySet.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                longClickListener.onItemLongClick(topic);
+                return true;
+            }
+            return false;
         });
     }
 
@@ -164,12 +194,14 @@ public class TopicAdapter extends RecyclerView.Adapter<TopicAdapter.TopicViewHol
 
     static class TopicViewHolder extends RecyclerView.ViewHolder {
         TextView txtProjectName, txtCardCount, txtCreatedAt;
+        androidx.cardview.widget.CardView cardStudySet;
 
         public TopicViewHolder(@NonNull View itemView) {
             super(itemView);
             txtProjectName = itemView.findViewById(R.id.txtProjectName);
             txtCardCount = itemView.findViewById(R.id.txtCardCount);
             txtCreatedAt = itemView.findViewById(R.id.txtCreatedAt);
+            cardStudySet = itemView.findViewById(R.id.cardStudySet);
         }
     }
 }

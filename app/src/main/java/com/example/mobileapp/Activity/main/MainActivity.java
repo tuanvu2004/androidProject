@@ -33,20 +33,21 @@ import com.example.mobileapp.model.QuizQuestion;
 import com.example.mobileapp.model.QuizRequest;
 import java.io.Serializable;
 import java.util.List;
-import android.widget.Toast;
-import com.example.mobileapp.model.QuizQuestion;
-import com.example.mobileapp.model.QuizRequest;
-import java.io.Serializable;
-import java.util.List;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
+
+import okhttp3.ResponseBody;
 
 import java.util.ArrayList;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import android.widget.TextView;
+import android.widget.LinearLayout;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -86,8 +87,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Luôn tải lại tab hiện tại khi quay lại ứng dụng để cập nhật dữ liệu mới nhất
         refreshCurrentTab();
+    }
+
+    private static final int REQUEST_TOPIC_MANAGEMENT = 1001;
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @androidx.annotation.Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_TOPIC_MANAGEMENT && resultCode == RESULT_OK) {
+            refreshCurrentTab();
+        }
     }
 
     private void refreshCurrentTab() {
@@ -177,8 +187,8 @@ public class MainActivity extends AppCompatActivity {
 
         EditText edtSearch = view.findViewById(R.id.edtSearch);
 
-        // Load ban đầu (Mặc định click vào mở Flashcard)
-        performSearch("", rvTopics, null);
+        // Load ban đầu - TRANG CHỦ: isLibraryMode = false
+        performSearch("", rvTopics, false, topic -> showTopicOptions(topic));
 
         if (edtSearch != null) {
             edtSearch.addTextChangedListener(new TextWatcher() {
@@ -187,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    performSearch(s.toString().trim(), rvTopics, null);
+                    performSearch(s.toString().trim(), rvTopics, false, topic -> showTopicOptions(topic));
                 }
 
                 @Override
@@ -210,8 +220,8 @@ public class MainActivity extends AppCompatActivity {
 
         EditText edtSearch = view.findViewById(R.id.edtSearch);
 
-        // Load ban đầu với listener xử lý Quiz
-        performSearch("", rvTopics, topic -> {
+        // Load ban đầu - THƯ VIỆN: isLibraryMode = true
+        performSearch("", rvTopics, true, topic -> {
             startQuiz(topic);
         });
 
@@ -222,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    performSearch(s.toString().trim(), rvTopics, topic -> startQuiz(topic));
+                    performSearch(s.toString().trim(), rvTopics, true, topic -> startQuiz(topic));
                 }
 
                 @Override
@@ -242,12 +252,10 @@ public class MainActivity extends AppCompatActivity {
                     db.localQuizDao().getQuestionsForTopic(topicId);
 
             if (localQuestions != null && !localQuestions.isEmpty()) {
-                // Đã có bộ đề local -> Chuyển sang QuizActivity luôn
                 Log.d("QUIZ_LOCAL", "Sử dụng bộ đề local cho: " + topicName);
                 List<com.example.mobileapp.model.QuizQuestion> questions = convertToModel(localQuestions);
                 launchQuizActivity(topicId, topicName, questions);
             } else {
-                // Chưa có -> Gọi API tạo mới
                 runOnUiThread(() -> fetchNewQuiz(topic));
             }
         }).start();
@@ -325,11 +333,12 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, QuizActivity.class);
             intent.putExtra("QUESTIONS", (java.io.Serializable) questions);
             intent.putExtra("TOPIC_ID", topicId);
+            intent.putExtra("TOPIC_NAME", topicName);
             startActivity(intent);
         });
     }
 
-    private void performSearch(String query, RecyclerView rvTopics, TopicAdapter.OnItemClickListener listener) {
+    private void performSearch(String query, RecyclerView rvTopics, boolean isLibraryMode, TopicAdapter.OnItemClickListener listener) {
         TopicApi topicApi = ApiClient.getClient(this).create(TopicApi.class);
         TopicSearchRequest request = new TopicSearchRequest();
 
@@ -342,9 +351,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<TopicPageResponse>> call, Response<ApiResponse<TopicPageResponse>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
-                    List<com.example.mobileapp.model.Topic> topics = response.body().getData().getItems();
-                    
-                    // Now fetch history to map progress
+                    List<com.example.mobileapp.model.Topic> allTopics = response.body().getData().getItems();
+                    List<com.example.mobileapp.model.Topic> topics = new ArrayList<>();
+
+                    if (allTopics != null) {
+                        for (com.example.mobileapp.model.Topic t : allTopics) {
+                            if (!t.isDeleted()) {
+                                topics.add(t);
+                            }
+                        }
+                    }
+
+                    if (!isLibraryMode) {
+                        // TRANG CHỦ: Không cần fetch history, hiển thị luôn
+                        runOnUiThread(() -> {
+                            TopicAdapter adapter = new TopicAdapter(topics != null ? topics : new ArrayList<>(), listener);
+                            adapter.setLibraryMode(false);
+                            adapter.setOnItemLongClickListener(topic -> showDeleteConfirmDialog(topic));
+                            rvTopics.setAdapter(adapter);
+                        });
+                        return;
+                    }
+
+                    // THƯ VIỆN: Cần fetch history để tính % tiến độ
                     topicApi.searchQuizHistory(new TopicSearchRequest()).enqueue(new Callback<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>>() {
                         @Override
                         public void onResponse(Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> call, Response<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> hResponse) {
@@ -368,8 +397,9 @@ public class MainActivity extends AppCompatActivity {
                             
                             runOnUiThread(() -> {
                                 TopicAdapter adapter = new TopicAdapter(topics != null ? topics : new ArrayList<>(), listener);
-                                adapter.setLibraryMode(listener != null); 
+                                adapter.setLibraryMode(isLibraryMode); 
                                 adapter.setHistoryMap(historyMap);
+                                adapter.setOnItemLongClickListener(topic -> showDeleteConfirmDialog(topic));
                                 rvTopics.setAdapter(adapter);
                             });
                         }
@@ -379,6 +409,8 @@ public class MainActivity extends AppCompatActivity {
                             // Fallback to topics only if history fails
                             runOnUiThread(() -> {
                                 TopicAdapter adapter = new TopicAdapter(topics != null ? topics : new ArrayList<>(), listener);
+                                adapter.setLibraryMode(isLibraryMode);
+                                adapter.setOnItemLongClickListener(topic -> showDeleteConfirmDialog(topic));
                                 rvTopics.setAdapter(adapter);
                             });
                         }
@@ -431,30 +463,49 @@ public class MainActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
                     List<com.example.mobileapp.model.QuizResultResponse> allItems = response.body().getData().getItems();
                     
-                    // Lọc: Chỉ lấy kết quả MỚI NHẤT cho mỗi Topic
-                    Map<Long, com.example.mobileapp.model.QuizResultResponse> latestResults = new LinkedHashMap<>();
-                    if (allItems != null) {
-                        // Sắp xếp mới nhất lên đầu
-                        Collections.sort(allItems, (o1, o2) -> {
-                            if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
-                            return o2.getCreatedAt().compareTo(o1.getCreatedAt());
-                        });
-
-                        for (com.example.mobileapp.model.QuizResultResponse item : allItems) {
-                            if (!latestResults.containsKey(item.getTopicId())) {
-                                latestResults.put(item.getTopicId(), item);
+                    // 1. Fetch Topics to check which ones are deleted
+                    topicApi.searchTopics(new TopicSearchRequest()).enqueue(new Callback<ApiResponse<TopicPageResponse>>() {
+                        @Override
+                        public void onResponse(Call<ApiResponse<TopicPageResponse>> tCall, Response<ApiResponse<TopicPageResponse>> tResponse) {
+                            List<Long> deletedTopicIds = new ArrayList<>();
+                            if (tResponse.isSuccessful() && tResponse.body() != null && tResponse.body().getData() != null) {
+                                for (com.example.mobileapp.model.Topic t : tResponse.body().getData().getItems()) {
+                                    if (t.isDeleted()) deletedTopicIds.add(t.getId());
+                                }
                             }
-                        }
-                    }
-                    
-                    List<com.example.mobileapp.model.QuizResultResponse> displayItems = new ArrayList<>(latestResults.values());
 
-                    runOnUiThread(() -> {
-                        com.example.mobileapp.Adapter.QuizHistoryAdapter adapter =
-                                new com.example.mobileapp.Adapter.QuizHistoryAdapter(displayItems, item -> {
-                                    fetchHistoryDetailAndReview(item.getResultId());
+                            // 2. Filter History: Only newest result for non-deleted Topics
+                            Map<Long, com.example.mobileapp.model.QuizResultResponse> latestResults = new LinkedHashMap<>();
+                            if (allItems != null) {
+                                // Sort by newest first
+                                Collections.sort(allItems, (o1, o2) -> {
+                                    if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
+                                    return o2.getCreatedAt().compareTo(o1.getCreatedAt());
                                 });
-                        rvHistory.setAdapter(adapter);
+
+                                for (com.example.mobileapp.model.QuizResultResponse item : allItems) {
+                                    if (!deletedTopicIds.contains(item.getTopicId()) && !latestResults.containsKey(item.getTopicId())) {
+                                        latestResults.put(item.getTopicId(), item);
+                                    }
+                                }
+                            }
+                            
+                            List<com.example.mobileapp.model.QuizResultResponse> displayItems = new ArrayList<>(latestResults.values());
+
+                            runOnUiThread(() -> {
+                                com.example.mobileapp.Adapter.QuizHistoryAdapter adapter =
+                                        new com.example.mobileapp.Adapter.QuizHistoryAdapter(displayItems, item -> {
+                                            fetchHistoryDetailAndReview(item.getResultId());
+                                        });
+                                rvHistory.setAdapter(adapter);
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(Call<ApiResponse<TopicPageResponse>> tCall, Throwable t) {
+                            // Fallback if topic check fails
+                            loadTrophyPageSimple(allItems, rvHistory);
+                        }
                     });
                 }
             }
@@ -463,6 +514,29 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> call, Throwable t) {
                 Log.e("HISTORY_API", "Error: " + t.getMessage());
             }
+        });
+    }
+
+    private void loadTrophyPageSimple(List<com.example.mobileapp.model.QuizResultResponse> allItems, RecyclerView rvHistory) {
+        Map<Long, com.example.mobileapp.model.QuizResultResponse> latestResults = new LinkedHashMap<>();
+        if (allItems != null) {
+            Collections.sort(allItems, (o1, o2) -> {
+                if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
+                return o2.getCreatedAt().compareTo(o1.getCreatedAt());
+            });
+            for (com.example.mobileapp.model.QuizResultResponse item : allItems) {
+                if (!latestResults.containsKey(item.getTopicId())) {
+                    latestResults.put(item.getTopicId(), item);
+                }
+            }
+        }
+        List<com.example.mobileapp.model.QuizResultResponse> displayItems = new ArrayList<>(latestResults.values());
+        runOnUiThread(() -> {
+            com.example.mobileapp.Adapter.QuizHistoryAdapter adapter =
+                    new com.example.mobileapp.Adapter.QuizHistoryAdapter(displayItems, item -> {
+                        fetchHistoryDetailAndReview(item.getResultId());
+                    });
+            rvHistory.setAdapter(adapter);
         });
     }
 
@@ -527,5 +601,103 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (selected != null) selected.setSelected(true);
+    }
+
+    // ── DELETE TOPIC ─────────────────────────────────────────────────────────
+
+    private void showTopicOptions(com.example.mobileapp.model.Topic topic) {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.layout_topic_options, null);
+        bottomSheetDialog.setContentView(view);
+
+        TextView tvTopicName = view.findViewById(R.id.tvTopicName);
+        LinearLayout btnLearn = view.findViewById(R.id.btnLearnFlashcard);
+        LinearLayout btnManage = view.findViewById(R.id.btnManageVocab);
+
+        tvTopicName.setText(topic.getName());
+
+        // 1. Click Học Flashcard
+        btnLearn.setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            Intent intent = new Intent(this, com.example.mobileapp.Activity.main.flashCard.FlashcardActivity.class);
+            intent.putExtra("TOPIC_NAME", topic.getName());
+            if (topic.getVocabularies() != null) {
+                intent.putExtra("VOCAB_LIST", new java.util.ArrayList<>(topic.getVocabularies()));
+            }
+            startActivity(intent);
+        });
+
+        // 2. Click Quản lý từ vựng (Sửa/Xóa)
+        btnManage.setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            Intent intent = new Intent(this, TopicManagementActivity.class);
+            intent.putExtra("TOPIC", topic);
+            startActivityForResult(intent, REQUEST_TOPIC_MANAGEMENT);
+        });
+
+        bottomSheetDialog.show();
+    }
+
+    private void showDeleteConfirmDialog(com.example.mobileapp.model.Topic topic) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Xóa Topic")
+                .setMessage("Bạn có chắc chắn muốn xóa topic '" + topic.getName() + "' không? Hành động này sẽ xóa cả lịch sử thi liên quan.")
+                .setPositiveButton("Xóa", (dialog, which) -> deleteTopic(topic.getId()))
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void deleteTopic(Long topicId) {
+        Log.d("DELETE_TOPIC", "Bắt đầu gọi API xóa topicId: " + topicId);
+        TopicApi api = ApiClient.getClient(this).create(TopicApi.class);
+        
+        api.deleteTopic(topicId).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Log.d("DELETE_TOPIC", "Server báo xóa thành công (200 OK)");
+                    Toast.makeText(MainActivity.this, "Đã xóa topic thành công", Toast.LENGTH_SHORT).show();
+                    
+                    // 1. Xóa dữ liệu local
+                    deleteLocalQuizData(topicId);
+                    
+                    // 2. Cập nhật UI ngay lập tức (Optimistic UI)
+                    runOnUiThread(() -> {
+                        RecyclerView rv = null;
+                        if (currentTab == 0) {
+                            rv = findViewById(R.id.rvTopics);
+                        } else if (currentTab == 1) {
+                            rv = findViewById(R.id.rvTopicsLibrary);
+                        }
+                        
+                        if (rv != null && rv.getAdapter() instanceof TopicAdapter) {
+                            ((TopicAdapter) rv.getAdapter()).removeTopic(topicId);
+                        } else {
+                            refreshCurrentTab();
+                        }
+                    });
+                } else {
+                    Log.e("DELETE_TOPIC", "Server trả về lỗi. Code: " + response.code());
+                    if (response.code() == 403) {
+                        Toast.makeText(MainActivity.this, "Bạn không có quyền xóa topic này", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Không thể xóa. Mã lỗi: " + response.code(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e("DELETE_TOPIC", "Lỗi kết nối khi xóa: " + t.getMessage());
+                Toast.makeText(MainActivity.this, "Lỗi mạng, vui lòng thử lại", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void deleteLocalQuizData(Long topicId) {
+        new Thread(() -> {
+            com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
+            db.localQuizDao().deleteQuestionsForTopic(topicId);
+        }).start();
     }
 }

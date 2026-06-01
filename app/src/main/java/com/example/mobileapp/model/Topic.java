@@ -16,10 +16,16 @@ public class Topic implements Serializable {
     private int totalWords;
     private int masteredWords;
 
+    @SerializedName("isDeleted")
+    private boolean isDeleted;
+
     public Long getId()      { return id; }
     public String getName()  { return name; }
+    public void setName(String name) { this.name = name; }
     public String getCreatedAt() { return createdAt; }
     public List<Vocabulary> getVocabularies() { return vocabularies; }
+    public void setVocabularies(List<Vocabulary> vocabularies) { this.vocabularies = vocabularies; }
     public int getTotalWords() { return totalWords; }
     public int getMasteredWords() { return masteredWords; }
+    public boolean isDeleted() { return isDeleted; }
 }

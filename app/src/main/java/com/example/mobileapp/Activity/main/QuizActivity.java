@@ -30,7 +30,7 @@ import retrofit2.Response;
 
 public class QuizActivity extends AppCompatActivity {
 
-    private TextView txtProgress, txtQuestionWord, txtQuestionExample;
+    private TextView txtTopicTitle, txtProgress, txtQuestionWord, txtQuestionExample;
     private ProgressBar quizProgressBar;
     private LinearLayout optionsContainer;
     private ImageButton btnBackQuiz;
@@ -49,6 +49,7 @@ public class QuizActivity extends AppCompatActivity {
 
         questions = (List<QuizQuestion>) getIntent().getSerializableExtra("QUESTIONS");
         topicId = getIntent().getLongExtra("TOPIC_ID", -1);
+        String topicName = getIntent().getStringExtra("TOPIC_NAME");
         startTime = System.currentTimeMillis();
 
         if (questions == null || questions.isEmpty() || topicId == -1) {
@@ -58,10 +59,14 @@ public class QuizActivity extends AppCompatActivity {
         }
 
         initViews();
+        if (topicName != null) {
+            txtTopicTitle.setText(topicName);
+        }
         displayQuestion();
     }
 
     private void initViews() {
+        txtTopicTitle = findViewById(R.id.txtTopicTitle);
         txtProgress = findViewById(R.id.txtProgress);
         txtQuestionWord = findViewById(R.id.txtQuestionWord);
         txtQuestionExample = findViewById(R.id.txtQuestionExample);
@@ -79,7 +84,7 @@ public class QuizActivity extends AppCompatActivity {
         optionsContainer.removeAllViews();
         QuizQuestion q = questions.get(currentIndex);
 
-        txtProgress.setText(String.format(Locale.getDefault(), "Câu hỏi %d/%d", currentIndex + 1, questions.size()));
+        txtProgress.setText(String.format(Locale.getDefault(), "%d/%d", currentIndex + 1, questions.size()));
         quizProgressBar.setProgress(currentIndex + 1);
         txtQuestionWord.setText(q.getEnglish());
         txtQuestionExample.setText(q.getExample());
@@ -154,10 +159,16 @@ public class QuizActivity extends AppCompatActivity {
     private void showResult(QuizResultResponse result) {
         setContentView(R.layout.layout_quiz_result);
 
+        TextView txtTopicName = findViewById(R.id.txtResultTopicName);
         TextView txtScore = findViewById(R.id.txtResultScore);
         TextView txtStats = findViewById(R.id.txtResultStats);
         Button btnBack = findViewById(R.id.btnFinishQuiz);
         Button btnReview = findViewById(R.id.btnReviewQuiz);
+
+        String topicName = getIntent().getStringExtra("TOPIC_NAME");
+        if (topicName != null) {
+            txtTopicName.setText(topicName);
+        }
 
         int correctCount = 0;
         if (result.getAnswers() != null) {

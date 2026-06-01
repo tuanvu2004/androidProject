@@ -8,8 +8,18 @@
     android:background="?attr/colorSurface">
 
     <TextView
+        android:id="@+id/txtResultTopicName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="Topic Name"
+        android:textSize="18sp"
+        android:textColor="?attr/colorOnSurface"
+        android:alpha="0.7" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="Kết quả của bạn"
         android:textSize="24sp"
         android:textStyle="bold"

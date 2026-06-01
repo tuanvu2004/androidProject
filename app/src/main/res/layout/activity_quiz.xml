@@ -16,13 +16,23 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_revert" />
         <TextView
-            android:id="@+id/txtProgress"
+            android:id="@+id/txtTopicTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="Câu hỏi"
+            android:text="Topic Name"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface" />
+        <TextView
+            android:id="@+id/txtProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="1/10"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurface" />
     </RelativeLayout>
 
     <ProgressBar

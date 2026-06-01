@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <com.example.mobileapp.Custom.CustomInputField
+        android:id="@+id/dialogInputEnglish"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:labelText="Từ tiếng Anh" />
+
+    <com.example.mobileapp.Custom.CustomInputField
+        android:id="@+id/dialogInputVietnamese"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:labelText="Nghĩa tiếng Việt" />
+
+    <com.example.mobileapp.Custom.CustomInputField
+        android:id="@+id/dialogInputExample"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:labelText="Ví dụ (Example)" />
+
+</LinearLayout>
