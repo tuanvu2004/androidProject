@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -14,6 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.mobileapp.R;
+
+import java.util.Locale;
 
 public class CustomInputField extends FrameLayout {
 
@@ -45,21 +46,32 @@ public class CustomInputField extends FrameLayout {
 
         if (attrs != null) {
             android.content.res.TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CustomInputField);
-            
+
             String labelText = a.getString(R.styleable.CustomInputField_labelText);
             String hint = a.getString(R.styleable.CustomInputField_android_hint);
             String text = a.getString(R.styleable.CustomInputField_android_text);
             int inputType = a.getInt(R.styleable.CustomInputField_android_inputType, -1);
+            int textSize = a.getDimensionPixelSize(R.styleable.CustomInputField_android_textSize, -1);
 
             if (labelText != null) setLabelText(labelText);
             if (hint != null) setHint(hint);
             if (text != null) setText(text);
-            if (inputType != -1) edtInput.setInputType(inputType);
+
+            if (inputType != -1) {
+                edtInput.setInputType(inputType);
+            }
+
+            if (textSize != -1) {
+                edtInput.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, textSize);
+            }
 
             a.recycle();
         }
 
         if (edtInput != null) {
+            // Đảm bảo bàn phím hiển thị nút "Tiếp tục" thay vì "Hoàn tất" để tránh đóng bàn phím đột ngột
+            edtInput.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_NEXT);
+
             edtInput.setOnFocusChangeListener((v, hasFocus) -> {
                 if (tvLabel == null) return;
                 if (hasFocus) {
@@ -74,19 +86,16 @@ public class CustomInputField extends FrameLayout {
     }
 
     public void setLabelText(String text) {
-        if (tvLabel != null) {
-            tvLabel.setText(text);
-        }
+        if (tvLabel != null) tvLabel.setText(text);
     }
 
     public void setHint(String hint) {
-        if (edtInput != null) {
-            edtInput.setHint(hint);
-        }
+        if (edtInput != null) edtInput.setHint(hint);
     }
 
     public void setText(String text) {
-        if (edtInput != null) {
+        // Quan trọng: Chỉ set text nếu giá trị mới khác giá trị cũ để tránh mất dấu khi đang gõ
+        if (edtInput != null && !edtInput.getText().toString().equals(text)) {
             edtInput.setText(text);
         }
     }
@@ -95,7 +104,6 @@ public class CustomInputField extends FrameLayout {
         return (edtInput != null) ? edtInput.getText().toString() : "";
     }
 
-    //ERROR
     public void setError(String message) {
         if (message == null || message.isEmpty()) {
             tvError.setVisibility(GONE);

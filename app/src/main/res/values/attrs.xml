@@ -5,6 +5,7 @@
         <attr name="android:hint" />
         <attr name="android:text" />
         <attr name="android:inputType" />
+        <attr name="android:textSize" />
     </declare-styleable>
 
     <declare-styleable name="CustomBtn">

@@ -17,9 +17,12 @@ public class SplashActivity extends AppCompatActivity {
 
         SessionManager session = new SessionManager(this);
 
-        String token = session.getAccessToken();
+        String accessToken = session.getAccessToken();
+        String refreshToken = session.getRefreshToken();
 
-        if (token != null && !token.isEmpty()) {
+        // Nếu còn ít nhất một trong hai token thì cho vào Main
+        if ((accessToken != null && !accessToken.isEmpty()) || 
+            (refreshToken != null && !refreshToken.isEmpty())) {
             startActivity(new Intent(this, MainActivity.class));
         } else {
             startActivity(new Intent(this, SignInActivity.class));

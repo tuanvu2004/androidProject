@@ -30,6 +30,12 @@
         <activity android:name=".Activity.auth.SignupActivity"/>
         <activity android:name=".Activity.auth.ForgotPassActivity"/>
         <activity android:name=".Activity.main.MainActivity"/>
+        <activity android:name=".Activity.main.HomePageActivity"/>
+        <activity android:name=".Activity.main.ProjectActivity"/>
+        <activity android:name=".Activity.main.flashCard.FlashcardActivity"/>
+        <activity android:name=".Activity.main.CreateTopic"/>
+        <activity android:name=".Activity.main.QuizActivity"/>
+        <activity android:name=".Activity.main.ReviewQuizActivity"/>
 
     </application>
 

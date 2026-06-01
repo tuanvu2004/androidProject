@@ -10,6 +10,10 @@ public class ApiResponse<T> {
         return code;
     }
 
+    public String getMessage() {
+        return message;
+    }
+
     public T getData() {
         return data;
     }

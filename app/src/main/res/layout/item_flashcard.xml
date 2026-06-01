@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="28dp"
+        android:background="#FFFFFF">
+
+        <!-- Badge -->
+        <TextView
+            android:id="@+id/tvBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="VOCABULARY"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#4F46E5" />
+
+        <!-- English -->
+        <TextView
+            android:id="@+id/tvEnglish"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Server"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            android:layout_marginTop="20dp" />
+
+        <!-- Vietnamese -->
+        <TextView
+            android:id="@+id/tvVietnamese"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Máy chủ"
+            android:textSize="20sp"
+            android:textColor="#444444"
+            android:layout_marginTop="12dp" />
+
+        <!-- Example -->
+        <TextView
+            android:id="@+id/tvExample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="The website runs on a server."
+            android:textSize="18sp"
+            android:textColor="#666666"
+            android:layout_marginTop="24dp"
+            android:padding="18dp"
+            android:background="#F3F4F6"
+            android:gravity="center"
+            android:singleLine="false"
+            android:maxLines="5"/>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
