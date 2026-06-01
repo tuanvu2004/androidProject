@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.mobileapp.R;
 import com.example.mobileapp.model.QuizResultResponse;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -53,7 +55,25 @@ public class QuizHistoryAdapter extends RecyclerView.Adapter<QuizHistoryAdapter.
         int correct = item.getScore(); // score chính là số câu đúng
         
         holder.txtCardCount.setText(String.format(Locale.getDefault(), "%d/%d câu đúng", correct, total));
-        holder.txtCreatedAt.setText(item.getCreatedAt() != null ? item.getCreatedAt() : "");
+        
+        // Rút ngắn thời gian, chỉ để lại ngày tháng năm
+        String rawDate = item.getCreatedAt();
+        if (rawDate != null && rawDate.length() >= 10) {
+            try {
+                // Giả định định dạng ISO: 2026-06-01T...
+                String datePart = rawDate.substring(0, 10); // lấy yyyy-MM-dd
+                String[] parts = datePart.split("-");
+                if (parts.length == 3) {
+                    holder.txtCreatedAt.setText(parts[2] + "/" + parts[1] + "/" + parts[0]); // dd/MM/yyyy
+                } else {
+                    holder.txtCreatedAt.setText(datePart);
+                }
+            } catch (Exception e) {
+                holder.txtCreatedAt.setText(rawDate);
+            }
+        } else {
+            holder.txtCreatedAt.setText(rawDate != null ? rawDate : "");
+        }
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {

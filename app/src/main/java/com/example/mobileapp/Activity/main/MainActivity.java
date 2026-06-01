@@ -450,11 +450,9 @@ public class MainActivity extends AppCompatActivity {
                     List<com.example.mobileapp.model.QuizResultResponse> displayItems = new ArrayList<>(latestResults.values());
 
                     runOnUiThread(() -> {
-                        com.example.mobileapp.Adapter.QuizHistoryAdapter adapter = 
+                        com.example.mobileapp.Adapter.QuizHistoryAdapter adapter =
                                 new com.example.mobileapp.Adapter.QuizHistoryAdapter(displayItems, item -> {
-                                    Intent intent = new Intent(MainActivity.this, ReviewQuizActivity.class);
-                                    intent.putExtra("QUIZ_RESULT", item);
-                                    startActivity(intent);
+                                    fetchHistoryDetailAndReview(item.getResultId());
                                 });
                         rvHistory.setAdapter(adapter);
                     });
@@ -464,6 +462,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> call, Throwable t) {
                 Log.e("HISTORY_API", "Error: " + t.getMessage());
+            }
+        });
+    }
+
+    private void fetchHistoryDetailAndReview(Long resultId) {
+        if (resultId == null) return;
+
+        TopicApi api = ApiClient.getClient(this).create(TopicApi.class);
+        api.getQuizHistoryDetail(resultId).enqueue(new Callback<ApiResponse<com.example.mobileapp.model.QuizResultResponse>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> call,
+                                 Response<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Intent intent = new Intent(MainActivity.this, ReviewQuizActivity.class);
+                    intent.putExtra("QUIZ_RESULT", response.body().getData());
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(MainActivity.this, "Không thể tải chi tiết kết quả", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });
     }

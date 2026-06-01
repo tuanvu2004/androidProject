@@ -157,6 +157,7 @@ public class QuizActivity extends AppCompatActivity {
         TextView txtScore = findViewById(R.id.txtResultScore);
         TextView txtStats = findViewById(R.id.txtResultStats);
         Button btnBack = findViewById(R.id.btnFinishQuiz);
+        Button btnReview = findViewById(R.id.btnReviewQuiz);
 
         int correctCount = 0;
         if (result.getAnswers() != null) {
@@ -171,5 +172,33 @@ public class QuizActivity extends AppCompatActivity {
         txtStats.setText(String.format(Locale.getDefault(), "Đúng %d/%d câu", correctCount, result.getTotalQuestion()));
 
         btnBack.setOnClickListener(v -> finish());
+        btnReview.setOnClickListener(v -> {
+            if (result.getResultId() != null) {
+                fetchQuizHistoryAndReview(result.getResultId());
+            } else {
+                Toast.makeText(this, "Không tìm thấy ID kết quả", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void fetchQuizHistoryAndReview(Long resultId) {
+        TopicApi api = ApiClient.getClient(this).create(TopicApi.class);
+        api.getQuizHistoryDetail(resultId).enqueue(new Callback<ApiResponse<QuizResultResponse>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<QuizResultResponse>> call, Response<ApiResponse<QuizResultResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    android.content.Intent intent = new android.content.Intent(QuizActivity.this, ReviewQuizActivity.class);
+                    intent.putExtra("QUIZ_RESULT", response.body().getData());
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(QuizActivity.this, "Không thể tải chi tiết kết quả", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<QuizResultResponse>> call, Throwable t) {
+                Toast.makeText(QuizActivity.this, "Lỗi kết nối khi tải kết quả", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

@@ -11,7 +11,9 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public interface TopicApi {
 
@@ -38,5 +40,10 @@ public interface TopicApi {
     @POST("api/v1/quiz/history/search")
     Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> searchQuizHistory(
             @Body com.example.mobileapp.model.TopicSearchRequest request
+    );
+
+    @GET("api/v1/quiz/history/{resultId}")
+    Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> getQuizHistoryDetail(
+            @Path("resultId") Long resultId
     );
 }
