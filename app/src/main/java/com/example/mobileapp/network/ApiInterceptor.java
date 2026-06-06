@@ -40,7 +40,6 @@ public class ApiInterceptor implements Interceptor {
                 .addHeader("x-device-id", deviceId);
 
         String token = sessionManager.getAccessToken();
-        // Không thêm Auth header cho login/refresh để tránh lỗi 401 chéo
         if (token != null && !url.contains("/auth/login") && !url.contains("/auth/refresh")) {
             builder.addHeader("Authorization", "Bearer " + token);
         }

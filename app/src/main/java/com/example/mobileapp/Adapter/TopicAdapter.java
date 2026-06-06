@@ -70,6 +70,17 @@ public class TopicAdapter extends RecyclerView.Adapter<TopicAdapter.TopicViewHol
         }
     }
 
+    public void updateTopic(Topic updatedTopic) {
+        if (updatedTopic == null || updatedTopic.getId() == null) return;
+        for (int i = 0; i < topics.size(); i++) {
+            if (updatedTopic.getId().equals(topics.get(i).getId())) {
+                topics.set(i, updatedTopic);
+                notifyItemChanged(i);
+                break;
+            }
+        }
+    }
+
     @NonNull
     @Override
     public TopicViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

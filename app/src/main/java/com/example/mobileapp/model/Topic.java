@@ -26,6 +26,7 @@ public class Topic implements Serializable {
     public List<Vocabulary> getVocabularies() { return vocabularies; }
     public void setVocabularies(List<Vocabulary> vocabularies) { this.vocabularies = vocabularies; }
     public int getTotalWords() { return totalWords; }
+    public void setTotalWords(int totalWords) { this.totalWords = totalWords; }
     public int getMasteredWords() { return masteredWords; }
     public boolean isDeleted() { return isDeleted; }
 }

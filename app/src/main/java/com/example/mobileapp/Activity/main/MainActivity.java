@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -53,7 +54,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageButton btnHome, btnLibrary, btnTrophy, btnSettings, btnAdd;
     private FrameLayout container;
+    private ProgressBar mainProgressBar;
     private int currentTab = 0;
+    private boolean skipNextResumeRefresh = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +90,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (skipNextResumeRefresh) {
+            skipNextResumeRefresh = false;
+            return;
+        }
         refreshCurrentTab();
     }
 
@@ -96,8 +103,36 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @androidx.annotation.Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_TOPIC_MANAGEMENT && resultCode == RESULT_OK) {
-            refreshCurrentTab();
+            skipNextResumeRefresh = true; 
+            
+            if (data != null && data.hasExtra("UPDATED_TOPIC")) {
+                com.example.mobileapp.model.Topic updated = (com.example.mobileapp.model.Topic) data.getSerializableExtra("UPDATED_TOPIC");
+                Log.d("SYNC_UI", "Received updated topic: " + updated.getName() + " with " + updated.getTotalWords() + " words");
+
+                updateTopicInUI(updated);
+
+                Toast.makeText(this, "Đã cập nhật danh sách từ vựng", Toast.LENGTH_SHORT).show();
+            } else {
+                refreshCurrentTab();
+            }
         }
+    }
+
+    private void updateTopicInUI(com.example.mobileapp.model.Topic updatedTopic) {
+        runOnUiThread(() -> {
+            RecyclerView rv = null;
+            if (currentTab == 0) {
+                rv = findViewById(R.id.rvTopics);
+            } else if (currentTab == 1) {
+                rv = findViewById(R.id.rvTopicsLibrary);
+            }
+
+            if (rv != null && rv.getAdapter() instanceof TopicAdapter) {
+                ((TopicAdapter) rv.getAdapter()).updateTopic(updatedTopic);
+            } else {
+                refreshCurrentTab();
+            }
+        });
     }
 
     private void refreshCurrentTab() {
@@ -135,6 +170,16 @@ public class MainActivity extends AppCompatActivity {
         btnSettings = findViewById(R.id.btn_settings);
         btnAdd      = findViewById(R.id.btn_add);
         container   = findViewById(R.id.container);
+        mainProgressBar = findViewById(R.id.mainProgressBar);
+    }
+
+    private void showMainLoading(boolean loading) {
+        if (mainProgressBar != null) {
+            mainProgressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
+        }
+        if (container != null) {
+            container.setAlpha(loading ? 0.5f : 1.0f);
+        }
     }
 
     private void setupNavigation() {
@@ -272,6 +317,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        showMainLoading(true);
         TopicApi topicApi = ApiClient.getClient(this).create(TopicApi.class);
         com.example.mobileapp.model.QuizRequest request = new com.example.mobileapp.model.QuizRequest(topic.getId(), vocabularyCount);
 
@@ -279,6 +325,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<List<com.example.mobileapp.model.QuizQuestion>>> call, 
                                  Response<ApiResponse<List<com.example.mobileapp.model.QuizQuestion>>> response) {
+                showMainLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
                     List<com.example.mobileapp.model.QuizQuestion> questions = response.body().getData();
                     if (questions != null && !questions.isEmpty()) {
@@ -293,7 +340,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ApiResponse<List<com.example.mobileapp.model.QuizQuestion>>> call, Throwable t) {
+                showMainLoading(false);
                 Log.e("QUIZ_API", "Lỗi: " + t.getMessage());
+                Toast.makeText(MainActivity.this, "Lỗi kết nối khi tạo bộ đề", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -339,6 +388,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void performSearch(String query, RecyclerView rvTopics, boolean isLibraryMode, TopicAdapter.OnItemClickListener listener) {
+        showMainLoading(true);
         TopicApi topicApi = ApiClient.getClient(this).create(TopicApi.class);
         TopicSearchRequest request = new TopicSearchRequest();
 
@@ -363,6 +413,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     if (!isLibraryMode) {
+                        showMainLoading(false);
                         // TRANG CHỦ: Không cần fetch history, hiển thị luôn
                         runOnUiThread(() -> {
                             TopicAdapter adapter = new TopicAdapter(topics != null ? topics : new ArrayList<>(), listener);
@@ -377,6 +428,7 @@ public class MainActivity extends AppCompatActivity {
                     topicApi.searchQuizHistory(new TopicSearchRequest()).enqueue(new Callback<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>>() {
                         @Override
                         public void onResponse(Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> call, Response<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> hResponse) {
+                            showMainLoading(false);
                             Map<Long, com.example.mobileapp.model.QuizResultResponse> historyMap = new HashMap<>();
                             if (hResponse.isSuccessful() && hResponse.body() != null && hResponse.body().getData() != null) {
                                 List<com.example.mobileapp.model.QuizResultResponse> historyItems = hResponse.body().getData().getItems();
@@ -406,6 +458,7 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onFailure(Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> call, Throwable t) {
+                            showMainLoading(false);
                             // Fallback to topics only if history fails
                             runOnUiThread(() -> {
                                 TopicAdapter adapter = new TopicAdapter(topics != null ? topics : new ArrayList<>(), listener);
@@ -415,11 +468,14 @@ public class MainActivity extends AppCompatActivity {
                             });
                         }
                     });
+                } else {
+                    showMainLoading(false);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<TopicPageResponse>> call, Throwable t) {
+                showMainLoading(false);
                 Log.e("SEARCH_API", "Error: " + t.getMessage());
             }
         });
@@ -445,6 +501,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadTrophyPage() {
         if (container == null) return;
 
+        showMainLoading(true);
         container.removeAllViews();
         View view = getLayoutInflater().inflate(R.layout.layout_trophy, container, false);
         container.addView(view);
@@ -467,6 +524,7 @@ public class MainActivity extends AppCompatActivity {
                     topicApi.searchTopics(new TopicSearchRequest()).enqueue(new Callback<ApiResponse<TopicPageResponse>>() {
                         @Override
                         public void onResponse(Call<ApiResponse<TopicPageResponse>> tCall, Response<ApiResponse<TopicPageResponse>> tResponse) {
+                            showMainLoading(false);
                             List<Long> deletedTopicIds = new ArrayList<>();
                             if (tResponse.isSuccessful() && tResponse.body() != null && tResponse.body().getData() != null) {
                                 for (com.example.mobileapp.model.Topic t : tResponse.body().getData().getItems()) {
@@ -503,15 +561,19 @@ public class MainActivity extends AppCompatActivity {
 
                         @Override
                         public void onFailure(Call<ApiResponse<TopicPageResponse>> tCall, Throwable t) {
+                            showMainLoading(false);
                             // Fallback if topic check fails
                             loadTrophyPageSimple(allItems, rvHistory);
                         }
                     });
+                } else {
+                    showMainLoading(false);
                 }
             }
 
             @Override
             public void onFailure(Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> call, Throwable t) {
+                showMainLoading(false);
                 Log.e("HISTORY_API", "Error: " + t.getMessage());
             }
         });
@@ -543,11 +605,13 @@ public class MainActivity extends AppCompatActivity {
     private void fetchHistoryDetailAndReview(Long resultId) {
         if (resultId == null) return;
 
+        showMainLoading(true);
         TopicApi api = ApiClient.getClient(this).create(TopicApi.class);
         api.getQuizHistoryDetail(resultId).enqueue(new Callback<ApiResponse<com.example.mobileapp.model.QuizResultResponse>>() {
             @Override
             public void onResponse(Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> call,
                                  Response<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> response) {
+                showMainLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
                     Intent intent = new Intent(MainActivity.this, ReviewQuizActivity.class);
                     intent.putExtra("QUIZ_RESULT", response.body().getData());
@@ -559,6 +623,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> call, Throwable t) {
+                showMainLoading(false);
                 Toast.makeText(MainActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });

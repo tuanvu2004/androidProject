@@ -41,16 +41,26 @@ public class VocabEditAdapter extends RecyclerView.Adapter<VocabEditAdapter.View
         Vocabulary v = vocabularies.get(position);
         holder.tvEnglish.setText(v.getEnglish());
         holder.tvVietnamese.setText(v.getVietnamese());
-        
+
         if (v.getExample() != null && !v.getExample().isEmpty()) {
             holder.tvExample.setVisibility(View.VISIBLE);
             holder.tvExample.setText(v.getExample());
         } else {
             holder.tvExample.setVisibility(View.GONE);
         }
-        
-        holder.btnEdit.setOnClickListener(view -> actionListener.onEdit(v, position));
-        holder.btnDelete.setOnClickListener(view -> actionListener.onDelete(v, position));
+
+        holder.btnEdit.setOnClickListener(view -> {
+            int currentPos = holder.getBindingAdapterPosition();
+            if (currentPos != RecyclerView.NO_POSITION) {
+                actionListener.onEdit(vocabularies.get(currentPos), currentPos);
+            }
+        });
+        holder.btnDelete.setOnClickListener(view -> {
+            int currentPos = holder.getBindingAdapterPosition();
+            if (currentPos != RecyclerView.NO_POSITION) {
+                actionListener.onDelete(vocabularies.get(currentPos), currentPos);
+            }
+        });
     }
 
     @Override
@@ -61,7 +71,7 @@ public class VocabEditAdapter extends RecyclerView.Adapter<VocabEditAdapter.View
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvEnglish, tvVietnamese, tvExample;
         ImageButton btnEdit, btnDelete;
-        
+
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvEnglish = itemView.findViewById(R.id.tvEnglish);

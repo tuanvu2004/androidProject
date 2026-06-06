@@ -29,6 +29,7 @@
         <activity android:name=".Activity.auth.SignInActivity"/>
         <activity android:name=".Activity.auth.SignupActivity"/>
         <activity android:name=".Activity.auth.ForgotPassActivity"/>
+        <activity android:name=".Activity.auth.RegisterSuccessActivity"/>
         <activity android:name=".Activity.main.MainActivity"/>
         <activity android:name=".Activity.main.HomePageActivity"/>
         <activity android:name=".Activity.main.ProjectActivity"/>

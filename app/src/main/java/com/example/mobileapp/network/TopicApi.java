@@ -1,6 +1,11 @@
 package com.example.mobileapp.network;
 
 import com.example.mobileapp.model.ApiResponse;
+import com.example.mobileapp.model.QuizHistoryPageResponse;
+import com.example.mobileapp.model.QuizQuestion;
+import com.example.mobileapp.model.QuizRequest;
+import com.example.mobileapp.model.QuizResultResponse;
+import com.example.mobileapp.model.QuizSubmissionRequest;
 import com.example.mobileapp.model.Topic;
 import com.example.mobileapp.model.TopicCreateRequest;
 import com.example.mobileapp.model.TopicPageResponse;
@@ -33,19 +38,19 @@ public interface TopicApi {
     );
 
     @POST("api/v1/quiz/generate")
-    Call<ApiResponse<List<com.example.mobileapp.model.QuizQuestion>>> generateQuiz(
-            @Body com.example.mobileapp.model.QuizRequest request
+    Call<ApiResponse<List<QuizQuestion>>> generateQuiz(
+            @Body QuizRequest request
     );
 
     @POST("api/v1/quiz/submit")
-    Call<ApiResponse<com.example.mobileapp.model.QuizResultResponse>> submitQuiz(
-            @Body com.example.mobileapp.model.QuizSubmissionRequest request
+    Call<ApiResponse<QuizResultResponse>> submitQuiz(
+            @Body QuizSubmissionRequest request
     );
 
     @Headers("Cache-Control: no-cache")
     @POST("api/v1/quiz/history/search")
-    Call<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>> searchQuizHistory(
-            @Body com.example.mobileapp.model.TopicSearchRequest request
+    Call<ApiResponse<QuizHistoryPageResponse>> searchQuizHistory(
+            @Body TopicSearchRequest request
     );
 
     @GET("api/v1/quiz/history/{resultId}")
@@ -53,6 +58,7 @@ public interface TopicApi {
             @Path("resultId") Long resultId
     );
 
+    @Headers("Cache-Control: no-cache")
     @GET("api/v1/topics/{id}")
     Call<ApiResponse<Topic>> getTopicById(
             @Path("id") Long id
@@ -78,6 +84,6 @@ public interface TopicApi {
     @HTTP(method = "DELETE", path = "api/v1/topics/{id}/vocabularies", hasBody = true)
     Call<ApiResponse<Topic>> deleteVocabularies(
             @Path("id") Long id,
-            @Body List<Long> vocabularyIds
+            @Body List<String> words
     );
 }

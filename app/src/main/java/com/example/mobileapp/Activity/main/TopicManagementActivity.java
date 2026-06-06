@@ -18,6 +18,8 @@ import com.example.mobileapp.Custom.CustomInputField;
 import com.example.mobileapp.R;
 import com.example.mobileapp.model.ApiResponse;
 import com.example.mobileapp.model.Topic;
+import com.example.mobileapp.model.TopicPageResponse;
+import com.example.mobileapp.model.TopicSearchRequest;
 import com.example.mobileapp.model.Vocabulary;
 import com.example.mobileapp.network.ApiClient;
 import com.example.mobileapp.network.TopicApi;
@@ -38,6 +40,7 @@ public class TopicManagementActivity extends AppCompatActivity {
     private Topic currentTopic;
     private List<Vocabulary> vocabList = new ArrayList<>();
     private TopicApi topicApi;
+    private boolean isSyncing = false;
     private boolean isDataChanged = false;
 
     @Override
@@ -63,6 +66,10 @@ public class TopicManagementActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                if (isSyncing) {
+                    Toast.makeText(TopicManagementActivity.this, "Đang lưu thay đổi, vui lòng đợi...", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (isDataChanged) {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("UPDATED_TOPIC", currentTopic);
@@ -77,26 +84,34 @@ public class TopicManagementActivity extends AppCompatActivity {
         viewTopicName = findViewById(R.id.viewTopicName);
         rvVocabList = findViewById(R.id.rvVocabList);
         progressBar = findViewById(R.id.progressBar);
-        
+
         findViewById(R.id.btnBack).setOnClickListener(v -> {
             getOnBackPressedDispatcher().onBackPressed();
         });
-        
-        findViewById(R.id.btnAddVocab).setOnClickListener(v -> showVocabDialog(null, -1));
 
-        findViewById(R.id.btnRenameTopic).setOnClickListener(v -> showRenameTopicDialog());
+        findViewById(R.id.btnAddVocab).setOnClickListener(v -> {
+            if (isSyncing) return;
+            showVocabDialog(null, -1);
+        });
+
+        findViewById(R.id.btnRenameTopic).setOnClickListener(v -> {
+            if (isSyncing) return;
+            showRenameTopicDialog();
+        });
         viewTopicName.setText(currentTopic.getName());
-        
+
         rvVocabList.setLayoutManager(new LinearLayoutManager(this));
-        
+
         adapter = new VocabEditAdapter(vocabList, new VocabEditAdapter.OnVocabActionListener() {
             @Override
             public void onEdit(Vocabulary vocabulary, int position) {
+                if (isSyncing) return;
                 showVocabDialog(vocabulary, position);
             }
 
             @Override
             public void onDelete(Vocabulary vocabulary, int position) {
+                if (isSyncing) return;
                 confirmDeleteVocab(vocabulary, position);
             }
         });
@@ -104,8 +119,20 @@ public class TopicManagementActivity extends AppCompatActivity {
     }
 
     private void showLoading(boolean loading) {
+        this.isSyncing = loading;
         if (progressBar != null) {
             progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
+        }
+        
+        // Disable interactions while syncing
+        View btnAdd = findViewById(R.id.btnAddVocab);
+        View btnRename = findViewById(R.id.btnRenameTopic);
+        if (btnAdd != null) btnAdd.setEnabled(!loading);
+        if (btnRename != null) btnRename.setEnabled(!loading);
+
+        if (rvVocabList != null) {
+            rvVocabList.setEnabled(!loading);
+            rvVocabList.setAlpha(loading ? 0.5f : 1.0f);
         }
     }
 
@@ -135,17 +162,23 @@ public class TopicManagementActivity extends AppCompatActivity {
     private void updateUI() {
         if (currentTopic == null) return;
         viewTopicName.setText(currentTopic.getName());
+        
         vocabList.clear();
         if (currentTopic.getVocabularies() != null) {
             vocabList.addAll(currentTopic.getVocabularies());
         }
+
+        currentTopic.setTotalWords(vocabList.size());
+        
+        Log.d("UI_UPDATE", "Topic: " + currentTopic.getName() + ", Vocabs: " + vocabList.size() + ", totalWords: " + currentTopic.getTotalWords());
+
         adapter.notifyDataSetChanged();
     }
 
     private void showVocabDialog(Vocabulary vocab, int position) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_vocab, null);
-        
+
         CustomInputField inputEnglish = dialogView.findViewById(R.id.dialogInputEnglish);
         CustomInputField inputVietnamese = dialogView.findViewById(R.id.dialogInputVietnamese);
         CustomInputField inputExample = dialogView.findViewById(R.id.dialogInputExample);
@@ -162,7 +195,7 @@ public class TopicManagementActivity extends AppCompatActivity {
             String eng = inputEnglish.getEnteredText().trim();
             String vie = inputVietnamese.getEnteredText().trim();
             String ex = inputExample.getEnteredText().trim();
-            
+
             if (eng.isEmpty() || vie.isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập Anh - Việt", Toast.LENGTH_SHORT).show();
                 return;
@@ -174,10 +207,12 @@ public class TopicManagementActivity extends AppCompatActivity {
                 newVocab.setVietnamese(vie);
                 newVocab.setExample(ex);
                 vocabList.add(newVocab);
+                adapter.notifyItemInserted(vocabList.size() - 1);
             } else {
                 vocab.setEnglish(eng);
                 vocab.setVietnamese(vie);
                 vocab.setExample(ex);
+                adapter.notifyItemChanged(position);
             }
             syncVocabulariesWithServer();
         });
@@ -188,7 +223,7 @@ public class TopicManagementActivity extends AppCompatActivity {
     private void showRenameTopicDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Đổi tên Topic");
-        
+
         final android.widget.EditText input = new android.widget.EditText(this);
         input.setText(currentTopic.getName());
         input.setPadding(50, 20, 50, 20);
@@ -208,7 +243,7 @@ public class TopicManagementActivity extends AppCompatActivity {
         showLoading(true);
         String oldName = currentTopic.getName();
         currentTopic.setName(newName);
-        
+
         topicApi.updateTopic(currentTopic.getId(), currentTopic).enqueue(new Callback<ApiResponse<Topic>>() {
             @Override
             public void onResponse(Call<ApiResponse<Topic>> call, Response<ApiResponse<Topic>> response) {
@@ -219,7 +254,7 @@ public class TopicManagementActivity extends AppCompatActivity {
                     isDataChanged = true;
                     Toast.makeText(TopicManagementActivity.this, "Đã đổi tên topic", Toast.LENGTH_SHORT).show();
                 } else {
-                    currentTopic.setName(oldName); // Rollback
+                    currentTopic.setName(oldName);
                     Toast.makeText(TopicManagementActivity.this, "Lỗi khi đổi tên topic (500)", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -227,7 +262,7 @@ public class TopicManagementActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<ApiResponse<Topic>> call, Throwable t) {
                 showLoading(false);
-                currentTopic.setName(oldName); // Rollback
+                currentTopic.setName(oldName);
                 Toast.makeText(TopicManagementActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });
@@ -235,8 +270,10 @@ public class TopicManagementActivity extends AppCompatActivity {
 
     private void syncVocabulariesWithServer() {
         showLoading(true);
-        List<Vocabulary> listToSend = new ArrayList<>(vocabList);
-        
+
+        currentTopic.setVocabularies(new ArrayList<>(vocabList));
+        List<Vocabulary> listToSend = currentTopic.getVocabularies();
+
         Log.d("SYNC_VOCAB", "Sending updateVocabularies request. List size: " + listToSend.size());
 
         topicApi.updateVocabularies(currentTopic.getId(), listToSend).enqueue(new Callback<ApiResponse<Topic>>() {
@@ -244,14 +281,44 @@ public class TopicManagementActivity extends AppCompatActivity {
             public void onResponse(Call<ApiResponse<Topic>> call, Response<ApiResponse<Topic>> response) {
                 showLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
-                    currentTopic = response.body().getData();
-                    updateUI(); 
-                    deleteLocalQuizCache();
+                    Topic serverTopic = response.body().getData();
+
+                    if (serverTopic.getVocabularies() != null) {
+                        List<Vocabulary> serverList = serverTopic.getVocabularies();
+                        List<Vocabulary> filteredList = new ArrayList<>();
+                        
+                        for (Vocabulary sv : serverList) {
+                            boolean existsInLocal = false;
+                            for (Vocabulary lv : vocabList) {
+                                if (sv.getId() != null && lv.getId() != null) {
+                                    if (sv.getId().equals(lv.getId())) {
+                                        existsInLocal = true;
+                                        break;
+                                    }
+                                } else if (sv.getEnglish().equals(lv.getEnglish()) && 
+                                           sv.getVietnamese().equals(lv.getVietnamese())) {
+                                    existsInLocal = true;
+                                    break;
+                                }
+                            }
+                            if (existsInLocal) {
+                                filteredList.add(sv);
+                            }
+                        }
+                        
+                        currentTopic = serverTopic;
+                        currentTopic.setVocabularies(filteredList);
+                        currentTopic.setTotalWords(filteredList.size());
+                        vocabList.clear();
+                        vocabList.addAll(filteredList);
+                        adapter.notifyDataSetChanged();
+                    }
+                    
+                    updateUI();
                     isDataChanged = true;
-                    Toast.makeText(TopicManagementActivity.this, "Đã cập nhật dữ liệu", Toast.LENGTH_SHORT).show();
                 } else {
                     Log.e("SYNC_ERR", "Sync failed. Code: " + response.code());
-                    Toast.makeText(TopicManagementActivity.this, "Lỗi server khi đồng bộ (500)", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TopicManagementActivity.this, "Lỗi server (" + response.code() + "). Đang tải lại...", Toast.LENGTH_SHORT).show();
                     fetchFullTopicData();
                 }
             }
@@ -260,7 +327,8 @@ public class TopicManagementActivity extends AppCompatActivity {
             public void onFailure(Call<ApiResponse<Topic>> call, Throwable t) {
                 showLoading(false);
                 Log.e("SYNC_FAIL", "Network error: " + t.getMessage());
-                Toast.makeText(TopicManagementActivity.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                Toast.makeText(TopicManagementActivity.this, "Lỗi kết nối. Vui lòng kiểm tra mạng", Toast.LENGTH_SHORT).show();
+                fetchFullTopicData();
             }
         });
     }
@@ -270,19 +338,109 @@ public class TopicManagementActivity extends AppCompatActivity {
                 .setTitle("Xóa từ")
                 .setMessage("Bạn có chắc chắn muốn xóa từ '" + vocabulary.getEnglish() + "'?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    if (position >= 0 && position < vocabList.size()) {
-                        vocabList.remove(position);
-                        syncVocabulariesWithServer();
+                    int currentIdx = -1;
+                    for (int i = 0; i < vocabList.size(); i++) {
+                        Vocabulary v = vocabList.get(i);
+                        if (vocabulary.getId() != null && v.getId() != null) {
+                            if (v.getId().equals(vocabulary.getId())) {
+                                currentIdx = i;
+                                break;
+                            }
+                        } else if (v.getEnglish().equals(vocabulary.getEnglish()) && 
+                                   v.getVietnamese().equals(vocabulary.getVietnamese())) {
+                            currentIdx = i;
+                            break;
+                        }
+                    }
+
+                    if (currentIdx != -1) {
+                        Vocabulary toDelete = vocabList.get(currentIdx);
+                        vocabList.remove(currentIdx);
+
+                        List<Vocabulary> updatedList = new ArrayList<>(vocabList);
+                        currentTopic.setVocabularies(updatedList);
+                        currentTopic.setTotalWords(updatedList.size()); 
+
+                        adapter.notifyItemRemoved(currentIdx);
+                        isDataChanged = true;
+
+                        deleteLocalQuizCache();
+
+                        deleteVocabFromServer(toDelete);
                     }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
+    private void deleteVocabFromServer(Vocabulary vocabulary) {
+        showLoading(true);
+
+        String englishToDelete = vocabulary.getEnglish();
+        List<String> englishWords = new ArrayList<>();
+        englishWords.add(englishToDelete);
+
+        Log.d("DELETE_VOCAB", "Request: DELETE api/v1/topics/" + currentTopic.getId() + "/vocabularies Body: [" + englishToDelete + "]");
+
+        topicApi.deleteVocabularies(currentTopic.getId(), englishWords).enqueue(new Callback<ApiResponse<Topic>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<Topic>> call, Response<ApiResponse<Topic>> response) {
+                showLoading(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.d("DELETE_SUCCESS", "Xóa thành công: " + englishToDelete);
+                    Topic updatedTopic = response.body().getData();
+                    
+                    if (updatedTopic != null) {
+                        currentTopic = updatedTopic;
+                    } else {
+                        if (currentTopic.getVocabularies() != null) {
+                            List<Vocabulary> newList = new ArrayList<>(currentTopic.getVocabularies());
+                            newList.remove(vocabulary);
+                            currentTopic.setVocabularies(newList);
+                            currentTopic.setTotalWords(newList.size());
+                        }
+                    }
+                    
+                    isDataChanged = true;
+                    deleteLocalQuizCache();
+                    
+                    runOnUiThread(() -> {
+                        updateUI();
+                        Toast.makeText(TopicManagementActivity.this, "Đã xóa từ vựng thành công", Toast.LENGTH_SHORT).show();
+                    });
+                } else {
+                    String errorMsg = "Lỗi server";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMsg = response.errorBody().string();
+                        }
+                    } catch (Exception e) {
+                        Log.e("ERR_BODY", "Error reading error body", e);
+                    }
+                    Log.e("DELETE_ERR", "Code: " + response.code() + " Message: " + errorMsg);
+                    Toast.makeText(TopicManagementActivity.this, "Server từ chối xóa (Code: " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    fetchFullTopicData(); 
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<Topic>> call, Throwable t) {
+                showLoading(false);
+                Log.e("DELETE_FAIL", "Lỗi kết nối", t);
+                Toast.makeText(TopicManagementActivity.this, "Lỗi kết nối. Vui lòng kiểm tra mạng", Toast.LENGTH_SHORT).show();
+                fetchFullTopicData();
+            }
+        });
+    }
+
     private void deleteLocalQuizCache() {
         new Thread(() -> {
-            com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
-            db.localQuizDao().deleteQuestionsForTopic(currentTopic.getId());
+            try {
+                com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
+                db.localQuizDao().deleteQuestionsForTopic(currentTopic.getId());
+            } catch (Exception e) {
+                Log.e("DB_ERR", "Error clearing cache", e);
+            }
         }).start();
     }
 }
