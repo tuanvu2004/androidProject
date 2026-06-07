@@ -292,9 +292,11 @@ public class MainActivity extends AppCompatActivity {
         
         // 1. Kiểm tra database local xem đã có bộ đề cho Topic này chưa
         new Thread(() -> {
+            SessionManager session = new SessionManager(this);
+            String userEmail = session.getEmail();
             com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
             List<com.example.mobileapp.database.entity.LocalQuizQuestion> localQuestions = 
-                    db.localQuizDao().getQuestionsForTopic(topicId);
+                    db.localQuizDao().getQuestionsForTopic(topicId, userEmail);
 
             if (localQuestions != null && !localQuestions.isEmpty()) {
                 Log.d("QUIZ_LOCAL", "Sử dụng bộ đề local cho: " + topicName);
@@ -349,10 +351,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void saveQuestionsToLocal(Long topicId, List<com.example.mobileapp.model.QuizQuestion> questions) {
         new Thread(() -> {
+            SessionManager session = new SessionManager(this);
+            String userEmail = session.getEmail();
             List<com.example.mobileapp.database.entity.LocalQuizQuestion> localList = new ArrayList<>();
             for (com.example.mobileapp.model.QuizQuestion q : questions) {
                 com.example.mobileapp.database.entity.LocalQuizQuestion local = new com.example.mobileapp.database.entity.LocalQuizQuestion();
                 local.setTopicId(topicId);
+                local.setUserEmail(userEmail);
                 local.setWordId(q.getWordId());
                 local.setEnglish(q.getEnglish());
                 local.setExample(q.getExample());
@@ -390,6 +395,9 @@ public class MainActivity extends AppCompatActivity {
     private void performSearch(String query, RecyclerView rvTopics, boolean isLibraryMode, TopicAdapter.OnItemClickListener listener) {
         showMainLoading(true);
         TopicApi topicApi = ApiClient.getClient(this).create(TopicApi.class);
+        SessionManager session = new SessionManager(this);
+        String userEmail = session.getEmail();
+
         TopicSearchRequest request = new TopicSearchRequest();
 
         if (!query.isEmpty()) {
@@ -405,11 +413,25 @@ public class MainActivity extends AppCompatActivity {
                     List<com.example.mobileapp.model.Topic> topics = new ArrayList<>();
 
                     if (allTopics != null) {
+                        List<com.example.mobileapp.database.entity.LocalTopic> localTopics = new ArrayList<>();
                         for (com.example.mobileapp.model.Topic t : allTopics) {
                             if (!t.isDeleted()) {
                                 topics.add(t);
+                                // Chuyển đổi sang entity để lưu local
+                                com.example.mobileapp.database.entity.LocalTopic local = new com.example.mobileapp.database.entity.LocalTopic();
+                                local.setId(t.getId());
+                                local.setName(t.getName());
+                                local.setUserEmail(userEmail);
+                                local.setTotalWords(t.getTotalWords());
+                                local.setCreatedAt(t.getCreatedAt());
+                                localTopics.add(local);
                             }
                         }
+                        // Lưu vào DB local
+                        new Thread(() -> {
+                            com.example.mobileapp.database.AppDatabase.getDatabase(MainActivity.this)
+                                    .localTopicDao().insertTopics(localTopics);
+                        }).start();
                     }
 
                     if (!isLibraryMode) {
@@ -509,9 +531,11 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView rvHistory = view.findViewById(R.id.rvQuizHistory);
         rvHistory.setLayoutManager(new LinearLayoutManager(this));
 
+        SessionManager session = new SessionManager(this);
+        String userEmail = session.getEmail();
+
         TopicApi topicApi = ApiClient.getClient(this).create(TopicApi.class);
         TopicSearchRequest request = new TopicSearchRequest();
-        // Bạn có thể thêm filter ở đây nếu cần
 
         topicApi.searchQuizHistory(request).enqueue(new Callback<ApiResponse<com.example.mobileapp.model.QuizHistoryPageResponse>>() {
             @Override
@@ -521,7 +545,8 @@ public class MainActivity extends AppCompatActivity {
                     List<com.example.mobileapp.model.QuizResultResponse> allItems = response.body().getData().getItems();
                     
                     // 1. Fetch Topics to check which ones are deleted
-                    topicApi.searchTopics(new TopicSearchRequest()).enqueue(new Callback<ApiResponse<TopicPageResponse>>() {
+                    TopicSearchRequest tRequest = new TopicSearchRequest();
+                    topicApi.searchTopics(tRequest).enqueue(new Callback<ApiResponse<TopicPageResponse>>() {
                         @Override
                         public void onResponse(Call<ApiResponse<TopicPageResponse>> tCall, Response<ApiResponse<TopicPageResponse>> tResponse) {
                             showMainLoading(false);
@@ -761,8 +786,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void deleteLocalQuizData(Long topicId) {
         new Thread(() -> {
+            SessionManager session = new SessionManager(this);
+            String userEmail = session.getEmail();
             com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
-            db.localQuizDao().deleteQuestionsForTopic(topicId);
+            db.localQuizDao().deleteQuestionsForTopic(topicId, userEmail);
+            db.localTopicDao().deleteTopic(topicId, userEmail);
         }).start();
     }
 }

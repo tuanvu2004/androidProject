@@ -14,9 +14,12 @@ public interface LocalQuizDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertQuestions(List<LocalQuizQuestion> questions);
 
-    @Query("SELECT * FROM local_quiz_questions WHERE topicId = :topicId")
-    List<LocalQuizQuestion> getQuestionsForTopic(Long topicId);
+    @Query("SELECT * FROM local_quiz_questions WHERE topicId = :topicId AND userEmail = :userEmail")
+    List<LocalQuizQuestion> getQuestionsForTopic(Long topicId, String userEmail);
 
-    @Query("DELETE FROM local_quiz_questions WHERE topicId = :topicId")
-    void deleteQuestionsForTopic(Long topicId);
+    @Query("DELETE FROM local_quiz_questions WHERE topicId = :topicId AND userEmail = :userEmail")
+    void deleteQuestionsForTopic(Long topicId, String userEmail);
+
+    @Query("DELETE FROM local_quiz_questions WHERE userEmail = :userEmail")
+    void deleteQuestionsForUser(String userEmail);
 }

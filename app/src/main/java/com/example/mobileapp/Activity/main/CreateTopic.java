@@ -17,6 +17,7 @@ import com.example.mobileapp.model.TopicCreateRequest;
 import com.example.mobileapp.model.Vocabulary;
 import com.example.mobileapp.network.ApiClient;
 import com.example.mobileapp.network.TopicApi;
+import com.example.mobileapp.session.SessionManager;
 
 import java.io.Serializable;
 import java.util.List;
@@ -50,8 +51,11 @@ public class CreateTopic {
             btnCreateTopic.setEnabled(false);
             if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
-            TopicCreateRequest request = new TopicCreateRequest(topicName);
-            Log.d("CREATE_TOPIC", "Bắt đầu tạo topic: " + topicName);
+            SessionManager sessionManager = new SessionManager(activity);
+            String userEmail = sessionManager.getEmail();
+
+            TopicCreateRequest request = new TopicCreateRequest(topicName, userEmail);
+            Log.d("CREATE_TOPIC", "Bắt đầu tạo topic: " + topicName + " cho user: " + userEmail);
 
             // Server trả về List<Vocabulary>, topic name lấy từ input của user
             topicApi.generateVocabularies(request).enqueue(new Callback<ApiResponse<List<Vocabulary>>>() {

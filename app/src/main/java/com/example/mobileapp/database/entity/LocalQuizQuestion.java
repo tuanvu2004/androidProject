@@ -16,6 +16,7 @@ public class LocalQuizQuestion {
     private int id;
     
     private Long topicId;
+    private String userEmail;
     private Long wordId;
     private String english;
     private String example;
@@ -26,6 +27,9 @@ public class LocalQuizQuestion {
 
     public Long getTopicId() { return topicId; }
     public void setTopicId(Long topicId) { this.topicId = topicId; }
+
+    public String getUserEmail() { return userEmail; }
+    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
 
     public Long getWordId() { return wordId; }
     public void setWordId(Long wordId) { this.wordId = wordId; }

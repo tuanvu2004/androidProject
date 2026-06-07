@@ -23,6 +23,7 @@ import com.example.mobileapp.model.TopicSearchRequest;
 import com.example.mobileapp.model.Vocabulary;
 import com.example.mobileapp.network.ApiClient;
 import com.example.mobileapp.network.TopicApi;
+import com.example.mobileapp.session.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -436,8 +437,10 @@ public class TopicManagementActivity extends AppCompatActivity {
     private void deleteLocalQuizCache() {
         new Thread(() -> {
             try {
+                SessionManager sessionManager = new SessionManager(this);
+                String email = sessionManager.getEmail();
                 com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
-                db.localQuizDao().deleteQuestionsForTopic(currentTopic.getId());
+                db.localQuizDao().deleteQuestionsForTopic(currentTopic.getId(), email);
             } catch (Exception e) {
                 Log.e("DB_ERR", "Error clearing cache", e);
             }
