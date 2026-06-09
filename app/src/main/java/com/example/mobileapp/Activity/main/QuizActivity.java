@@ -157,6 +157,36 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     private void showResult(QuizResultResponse result) {
+        // Cập nhật email cho topic này trong database local sau khi thi xong (để claim sở hữu)
+        new Thread(() -> {
+            com.example.mobileapp.session.SessionManager session = new com.example.mobileapp.session.SessionManager(this);
+            String userEmail = session.getEmail();
+            if (userEmail != null && topicId != null) {
+                com.example.mobileapp.database.AppDatabase db = com.example.mobileapp.database.AppDatabase.getDatabase(this);
+                // Kiểm tra xem topic này đã có trong local chưa, nếu chưa hoặc email null thì update
+                // (Thực tế searchTopics ở MainActivity sẽ lưu vào local, ở đây ta củng cố lại)
+                List<com.example.mobileapp.database.entity.LocalTopic> userTopics = db.localTopicDao().getTopicsForUser(userEmail);
+                boolean found = false;
+                for (com.example.mobileapp.database.entity.LocalTopic lt : userTopics) {
+                    if (lt.getId().equals(topicId)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Nếu chưa thấy topic này gán cho user, ta có thể tạo mới bản ghi local hoặc 
+                    // tốt nhất là đợi lần search tiếp theo. Nhưng để chắc chắn hiện ngay:
+                    // Ta không có tên Topic ở đây trừ khi lấy từ Intent
+                    String topicName = getIntent().getStringExtra("TOPIC_NAME");
+                    com.example.mobileapp.database.entity.LocalTopic local = new com.example.mobileapp.database.entity.LocalTopic();
+                    local.setId(topicId);
+                    local.setName(topicName != null ? topicName : "Topic " + topicId);
+                    local.setUserEmail(userEmail);
+                    db.localTopicDao().insertTopic(local);
+                }
+            }
+        }).start();
+
         setContentView(R.layout.layout_quiz_result);
 
         TextView txtTopicName = findViewById(R.id.txtResultTopicName);

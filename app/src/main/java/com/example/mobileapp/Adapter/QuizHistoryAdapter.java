@@ -20,9 +20,14 @@ public class QuizHistoryAdapter extends RecyclerView.Adapter<QuizHistoryAdapter.
 
     private final List<QuizResultResponse> historyList;
     private OnItemClickListener listener;
+    private OnItemLongClickListener longClickListener;
 
     public interface OnItemClickListener {
         void onItemClick(QuizResultResponse item);
+    }
+
+    public interface OnItemLongClickListener {
+        void onItemLongClick(QuizResultResponse item);
     }
 
     public QuizHistoryAdapter(List<QuizResultResponse> historyList) {
@@ -32,6 +37,21 @@ public class QuizHistoryAdapter extends RecyclerView.Adapter<QuizHistoryAdapter.
     public QuizHistoryAdapter(List<QuizResultResponse> historyList, OnItemClickListener listener) {
         this.historyList = historyList;
         this.listener = listener;
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener longClickListener) {
+        this.longClickListener = longClickListener;
+    }
+
+    public void removeHistoryItem(Long resultId) {
+        if (resultId == null) return;
+        for (int i = 0; i < historyList.size(); i++) {
+            if (resultId.equals(historyList.get(i).getResultId())) {
+                historyList.remove(i);
+                notifyItemRemoved(i);
+                break;
+            }
+        }
     }
 
     @NonNull
@@ -79,6 +99,14 @@ public class QuizHistoryAdapter extends RecyclerView.Adapter<QuizHistoryAdapter.
             if (listener != null) {
                 listener.onItemClick(item);
             }
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (longClickListener != null) {
+                longClickListener.onItemLongClick(item);
+                return true;
+            }
+            return false;
         });
     }
 

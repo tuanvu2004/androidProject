@@ -31,7 +31,8 @@ public class SessionManager {
     }
 
     public String getEmail() {
-        return prefs.getString(KEY_EMAIL, "");
+        String email = prefs.getString(KEY_EMAIL, null);
+        return (email == null || email.isEmpty()) ? null : email;
     }
 
     public String getAccessToken() {
