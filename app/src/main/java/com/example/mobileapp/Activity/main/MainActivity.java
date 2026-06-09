@@ -60,22 +60,33 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         applySavedTheme();
-
         super.onCreate(savedInstanceState);
 
         SessionManager session = new SessionManager(this);
         String access = session.getAccessToken();
         String refresh = session.getRefreshToken();
 
-        // Chỉ chuyển hướng nếu CẢ HAI token đều không có
         if (access == null && refresh == null) {
             navigateToSignIn();
             return;
         }
 
         setContentView(R.layout.activity_main);
+
+        // Edge-to-edge to allow the black background to show behind system bars
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        
+        // Ensure system bars are black with light icons
+        getWindow().setNavigationBarColor(android.graphics.Color.BLACK);
+        getWindow().setStatusBarColor(android.graphics.Color.BLACK);
+        
+        androidx.core.view.WindowInsetsControllerCompat controller = 
+            androidx.core.view.WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightNavigationBars(false);
+            controller.setAppearanceLightStatusBars(false);
+        }
 
         initViews();
         setupNavigation();

@@ -9,6 +9,7 @@
         <item name="colorPrimary">@color/primary_dark_mode</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">@color/bg_dark</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
         <item name="colorSurfaceVariant">#2C2C2C</item>
     </style>
 </resources>

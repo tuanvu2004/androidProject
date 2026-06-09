@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.MobileApp" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/bg_light</item>
         <item name="colorSurface">@color/white</item>
@@ -8,6 +8,11 @@
         <item name="colorOnPrimary">@color/white</item>
         <item name="android:textColorPrimary">@color/text_primary_light</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="29">false</item>
         <item name="colorSurfaceVariant">#E0E0E0</item>
     </style>
     <style name="Shape.App.Circle" parent="">
